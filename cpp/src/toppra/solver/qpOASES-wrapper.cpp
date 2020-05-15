@@ -12,7 +12,47 @@ struct qpOASESWrapper::Impl {
     : qp (nV, nC)
   {
     qpOASES::Options options;
-    options.printLevel = qpOASES::PL_NONE;
+    // options.printLevel = qpOASES::PL_NONE;
+	  options.printLevel = qpOASES::PL_HIGH;
+
+    options.enableRamping                 =  qpOASES::BT_TRUE;
+    options.enableFarBounds               =  qpOASES::BT_TRUE;
+    options.enableFlippingBounds          =  qpOASES::BT_TRUE;
+    options.enableRegularisation          =  qpOASES::BT_FALSE;
+    options.enableFullLITests             =  qpOASES::BT_FALSE;
+    options.enableNZCTests                =  qpOASES::BT_TRUE;
+    options.enableDriftCorrection         =  1;
+    options.enableCholeskyRefactorisation =  0;
+    options.enableEqualities              =  qpOASES::BT_FALSE;
+
+    options.terminationTolerance          =  5.0e6 * qpOASES::EPS;
+    options.boundTolerance                =  1.0e6 * qpOASES::EPS;
+    options.boundRelaxation               =  1.0e4;
+    options.epsNum                        = -1.0e3 * qpOASES::EPS;
+    options.epsDen                        =  1.0e3 * qpOASES::EPS;
+    options.maxPrimalJump                 =  1.0e8;
+    options.maxDualJump                   =  1.0e8;
+
+    options.initialRamping                =  0.5;
+    options.finalRamping                  =  1.0;
+    options.initialFarBounds              =  1.0e6;
+    options.growFarBounds                 =  1.0e3;
+    options.initialStatusBounds           =  qpOASES::ST_LOWER;
+    options.epsFlipping                   =  1.0e3 * qpOASES::EPS;
+    options.numRegularisationSteps        =  0;
+    options.epsRegularisation             =  1.0e3 * qpOASES::EPS;
+    options.numRefinementSteps            =  1;
+    options.epsIterRef                    =  1.0e2 * qpOASES::EPS;
+    options.epsLITests                    =  1.0e5 * qpOASES::EPS;
+    options.epsNZCTests                   =  3.0e3 * qpOASES::EPS;
+
+    options.enableDropInfeasibles         =  qpOASES::BT_FALSE;
+    // options.enableDropInfeasibles         =  qpOASES::BT_TRUE;
+    options.dropBoundPriority             =  1;
+    options.dropEqConPriority             =  1;
+    options.dropIneqConPriority           =  1;
+
+    options.numRefinementSteps            =  2;
 
     qp.setOptions( options );
   }
@@ -34,6 +74,8 @@ qpOASESWrapper::qpOASESWrapper (const LinearConstraintPtrs& constraints, const G
   Eigen::Index nC = 2; // First constraint is x + 2 D u <= xnext_max, second is xnext_min <= x + 2D u
   for (const Solver::LinearConstraintParams& linParam : m_constraintsParams.lin)
     nC += linParam.F[0].rows();
+
+  TOPPRA_LOG_DEBUG("Init qpOASESWrapper: num constraints = " << m_constraints.size() << " / N = " << nbStages() << " / nV = "<< nbVars() << " / nC = " << nC);
 
   Eigen::Index nV (nbVars());
   assert(nV == 2);
@@ -102,12 +144,16 @@ bool qpOASESWrapper::solveStagewiseOptim(std::size_t i,
       h[1] = std::min(h[1], box.x[i][1]);
     }
   }
+  // clamp bounds to avoid false positives of infeasibility detection in solver due to numerical roundoffs
+  l[0] = std::min(l[0], h[0]);
+  l[1] = std::min(l[1], h[1]);
 
   TOPPRA_LOG_DEBUG("lA: " << std::endl << m_lA);
   TOPPRA_LOG_DEBUG("hA: " << std::endl << m_hA);
   TOPPRA_LOG_DEBUG(" A: " << std::endl << m_A);
   TOPPRA_LOG_DEBUG("l : " << std::endl << l);
   TOPPRA_LOG_DEBUG("h : " << std::endl << h);
+  TOPPRA_LOG_DEBUG("g : " << std::endl << g);
 
   qpOASES::returnValue res;
   // TODO I assumed 1000 is the argument nWSR of the SQProblem.init function.
@@ -116,6 +162,7 @@ bool qpOASESWrapper::solveStagewiseOptim(std::size_t i,
   //)
   int nWSR = 1000;
   if (H.size() == 0) {
+    TOPPRA_LOG_DEBUG("H is zero size");
     m_impl->qp.setHessianType(qpOASES::HST_ZERO);
     res = m_impl->qp.init (NULL, g.data(),
         m_A.data(),
@@ -131,11 +178,16 @@ bool qpOASESWrapper::solveStagewiseOptim(std::size_t i,
         nWSR);
   }
 
+  bool is_infeasible = m_impl->qp.isInfeasible();
+  TOPPRA_LOG_DEBUG("qpOASES problem is infeasible = " << is_infeasible);
+
   if (res == qpOASES::SUCCESSFUL_RETURN) {
     solution.resize(nbVars());
     m_impl->qp.getPrimalSolution(solution.data());
     return true;
   }
+  TOPPRA_LOG_DEBUG("qpOASES failed, returned code: " << static_cast<int>(res));
+  
   return false;
 }
 
