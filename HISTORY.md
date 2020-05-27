@@ -6,12 +6,14 @@
 - [cpp] Implement serialization/deserialization for piecewise poly trajectory.
 - [cpp] Provide Python bindings for PiecewisePolyPath, TOPPRA and constraint classes.
 - [cpp] Construct piecewise poly as a hermite spline.
+- [cpp] Enhance API of JointTorque.
 
 ### Changed
 - [cpp] Minor improvement to PiecewisePolyPath.
 - [python] Implement `ParametrizeConstAccel` to allow reparametrize path.
 - [python] Parametrization output accessible via ParameterizationData class.
 - [python] Remove useless `scaling` in parameter computation.
+- [cpp] Fix GLPK bound type and solver numerical issues.
 
 
 ## 0.3.0 (May 3 2020)
