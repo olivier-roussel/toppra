@@ -136,7 +136,7 @@ bool GLPKWrapper::solveStagewiseOptim(std::size_t i,
     solution << glp_get_col_prim(m_lp, 1), glp_get_col_prim(m_lp, 2);
     return true;
   }
-  std::cout << ret << std::endl;
+  TOPPRA_LOG_DEBUG("GLPK failed. glp_simplex return value: " << ret);
   return false;
 }
 

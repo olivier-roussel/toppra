@@ -139,6 +139,8 @@ bool qpOASESWrapper::solveStagewiseOptim(std::size_t i,
     m_impl->qp.getPrimalSolution(solution.data());
     return true;
   }
+  TOPPRA_LOG_DEBUG("qpOASES failed. Error code: " <<
+      qpOASES::MessageHandling::getErrorCodeMessage(res) << " (" << res << ')');
   return false;
 }
 
