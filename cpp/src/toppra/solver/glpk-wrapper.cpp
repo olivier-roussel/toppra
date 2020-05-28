@@ -19,7 +19,7 @@ int bnd_type(const value_type& l, const value_type& u)
     if (u == infty) return GLP_FR;
     else return GLP_UP;
   } else {
-    if (l == u) return GLP_FX;
+    if (l >= u) return GLP_FX;
     else if (u == infty) return GLP_LO;
     else return GLP_DB;
   }
