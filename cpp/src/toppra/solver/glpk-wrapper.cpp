@@ -132,6 +132,27 @@ bool GLPKWrapper::solveStagewiseOptim(std::size_t i,
   parm.msg_lev = GLP_MSG_ERR;
   int ret = glp_simplex(m_lp, &parm);
   if (ret == 0) {
+    int status = glp_get_status(m_lp);
+    switch (status) {
+      case GLP_OPT:
+        break;
+      case GLP_FEAS:
+        TOPPRA_LOG_DEBUG("GLPK: solution is feasible");
+        break;
+      case GLP_INFEAS:
+        TOPPRA_LOG_DEBUG("GLPK: solution is infeasible");
+        break;
+      case GLP_NOFEAS:
+        TOPPRA_LOG_DEBUG("GLPK: problem has no feasible solution");
+        glp_write_prob(m_lp, 0, "/tmp/lp_problem.txt");
+        return false;
+      case GLP_UNBND:
+        TOPPRA_LOG_DEBUG("GLPK: problem has unbounded solution");
+        break;
+      case GLP_UNDEF:
+        TOPPRA_LOG_DEBUG("GLPK: solution is undefined");
+        return false;
+    }
     solution.resize(2);
     solution << glp_get_col_prim(m_lp, 1), glp_get_col_prim(m_lp, 2);
     return true;
