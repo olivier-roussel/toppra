@@ -12,6 +12,9 @@ struct qpOASESWrapper::Impl {
     : qp (nV, nC)
   {
     qpOASES::Options options;
+    options.setToReliable();
+    options.enableDropInfeasibles = qpOASES::BT_TRUE;
+    
     options.printLevel = qpOASES::PL_NONE;
 
     qp.setOptions( options );
