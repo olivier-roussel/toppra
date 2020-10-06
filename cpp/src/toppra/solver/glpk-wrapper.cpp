@@ -119,6 +119,10 @@ bool GLPKWrapper::solveStagewiseOptim(std::size_t i,
     if (!box.x.empty()) intersection(xb, box.x[i], xb);
   }
 
+  TOPPRA_LOG_DEBUG("ub = " << ub[0] << ", " << ub[1] << "]");
+  TOPPRA_LOG_DEBUG("xb = " << xb[0] << ", " << xb[1] << "]");
+  TOPPRA_LOG_DEBUG("GLPK: solution is feasible");
+
   set_col_bnds(m_lp, 1, ub);
   set_col_bnds(m_lp, 2, xb);
 
